@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Personal Expense Tracker</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>Personal Expense Tracker</h1>
+                <p>Sign in to manage your finances</p>
+            </div>
+
+            <div id="errorAlert" class="alert alert-danger"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" class="form-control" placeholder="Enter username" required autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="Enter password" required autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" style="margin-bottom: 12px;">Login</button>
+                <a href="signup.html" class="btn btn-secondary btn-block" style="text-decoration: none;">Sign Up</a>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // If already authenticated, redirect to dashboard
+        if (localStorage.getItem('auth_token')) {
+            window.location.href = 'dashboard.html';
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const errorAlert = document.getElementById('errorAlert');
+            errorAlert.style.display = 'none';
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showError('Incorrect username or password.');
+                return;
+            }
+
+            const apiBase = (window.location.protocol === 'http:' || window.location.protocol === 'https:') && window.location.port === '8080'
+                ? '/api'
+                : 'http://localhost:8080/api';
+
+            try {
+                const response = await fetch(`${apiBase}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                let data;
+                try {
+                    data = await response.json();
+                } catch (jsonErr) {
+                    showError('Server communication error. Please try again.');
+                    return;
+                }
+
+                if (response.ok && data.success) {
+                    localStorage.setItem('auth_token', data.token);
+                    localStorage.setItem('username', data.username);
+                    window.location.href = 'dashboard.html';
+                } else {
+                    showError(data.message || 'Incorrect username or password.');
+                }
+            } catch (err) {
+                showError('Cannot connect to the Java server. Please make sure the backend is running.');
+            }
+        });
+
+        function showError(msg) {
+            const el = document.getElementById('errorAlert');
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

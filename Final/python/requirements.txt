@@ -1,0 +1,10 @@
+# Python Financial Analytics Requirements
+# Built entirely with standard library dependencies for 100% offline support.
+#
+# Included in Python Standard Library:
+# - sqlite3
+# - json
+# - argparse
+# - datetime
+# - collections
+# - sys

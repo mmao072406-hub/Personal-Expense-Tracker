@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Personal Expense Tracker</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <div class="sidebar">
+            <div class="sidebar-brand">
+                <span>⚡ Expense Tracker</span>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="dashboard.html" class="active">🏠 Dashboard</a></li>
+                <li><a href="expenses.html">💰 Expenses</a></li>
+                <li><a href="income.html">📈 Income</a></li>
+                <li><a href="budget.html">💵 Budget</a></li>
+                <li><a href="reports.html">📊 Reports</a></li>
+                <li><a href="profile.html">👤 Profile</a></li>
+            </ul>
+            <div class="sidebar-logout">
+                <button onclick="logout()">🚪 Logout</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Dashboard</h1>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">Welcome back, <span id="userGreeting" style="font-weight: 700; color: var(--accent-primary);">User</span>!</p>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Balance</div>
+                    <div class="stat-value balance" id="totalBalance">₱0.00</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Income</div>
+                    <div class="stat-value income" id="totalIncome">₱0.00</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Expenses</div>
+                    <div class="stat-value expense" id="totalExpenses">₱0.00</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Expenses This Month</div>
+                    <div class="stat-value" id="thisMonthExpenses">₱0.00</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Transactions</div>
+                    <div class="stat-value" id="transactionCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Highest Expense</div>
+                    <div class="stat-value expense" id="highestExpense">₱0.00</div>
+                </div>
+            </div>
+
+            <!-- Recent Transactions Table -->
+            <div class="card">
+                <div class="card-title">Recent Expenses</div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Category</th>
+                                <th>Payment Method</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentTransactionsTable">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-muted);">Loading transactions...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('auth_token');
+        const username = localStorage.getItem('username');
+
+        if (!token) {
+            window.location.href = 'login.html';
+        } else if (username) {
+            document.getElementById('userGreeting').textContent = username;
+        }
+
+        async function loadDashboard() {
+            try {
+                const response = await fetch('/api/dashboard', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.status === 401) {
+                    logout();
+                    return;
+                }
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('totalBalance').textContent = formatCurrency(data.totalBalance);
+                    document.getElementById('totalIncome').textContent = formatCurrency(data.totalIncome);
+                    document.getElementById('totalExpenses').textContent = formatCurrency(data.totalExpenses);
+                    document.getElementById('thisMonthExpenses').textContent = formatCurrency(data.thisMonthExpenses);
+                    document.getElementById('transactionCount').textContent = data.transactionCount;
+                    document.getElementById('highestExpense').textContent = formatCurrency(data.highestExpense);
+
+                    renderRecentTransactions(data.recentExpenses);
+                }
+            } catch (err) {
+                console.error('Error loading dashboard:', err);
+            }
+        }
+
+        function renderRecentTransactions(transactions) {
+            const tbody = document.getElementById('recentTransactionsTable');
+            if (!transactions || transactions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No recent transactions found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = transactions.map(t => `
+                <tr>
+                    <td>${escapeHtml(t.date)}</td>
+                    <td style="font-weight: 600;">${escapeHtml(t.description)}</td>
+                    <td><span class="badge badge-${getBadgeClass(t.category)}">${escapeHtml(t.category)}</span></td>
+                    <td>${escapeHtml(t.paymentMethod)}</td>
+                    <td style="font-weight: 700; color: var(--accent-danger);">${formatCurrency(t.amount)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function formatCurrency(amount) {
+            return '₱' + Number(amount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function getBadgeClass(category) {
+            if (!category) return 'default';
+            const cat = category.toLowerCase();
+            if (cat.includes('food')) return 'food';
+            if (cat.includes('transport')) return 'transportation';
+            if (cat.includes('school')) return 'school';
+            if (cat.includes('bill')) return 'bills';
+            if (cat.includes('shop')) return 'shopping';
+            return 'default';
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        async function logout() {
+            try {
+                await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            } catch(e) {}
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('username');
+            window.location.href = 'login.html';
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>

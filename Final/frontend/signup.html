@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Personal Expense Tracker</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>Create your account</h1>
+                <p>Enter a username and password to get started.</p>
+            </div>
+
+            <div id="errorAlert" class="alert alert-danger"></div>
+            <div id="successAlert" class="alert alert-success"></div>
+
+            <form id="signupForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" class="form-control" placeholder="Enter username" required
+                        autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="Enter password" required
+                        autocomplete="new-password">
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" class="form-control" placeholder="Confirm password"
+                        required autocomplete="new-password">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
+            </form>
+
+            <div style="text-align: center; margin-top: 20px; font-size: 0.9rem; color: var(--text-secondary);">
+                Already have an account? <a href="login.html"
+                    style="color: var(--accent-primary); text-decoration: none; font-weight: 600;">Log In</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('signupForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const errorAlert = document.getElementById('errorAlert');
+            const successAlert = document.getElementById('successAlert');
+            errorAlert.style.display = 'none';
+            successAlert.style.display = 'none';
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!username) {
+                showError('Username is required.');
+                return;
+            }
+            if (!password) {
+                showError('Password is required.');
+                return;
+            }
+            if (!confirmPassword) {
+                showError('Please confirm your password.');
+                return;
+            }
+            if (password !== confirmPassword) {
+                showError('Passwords do not match.');
+                return;
+            }
+
+            const apiBase = (window.location.protocol === 'http:' || window.location.protocol === 'https:') && window.location.port === '8080'
+                ? '/api'
+                : 'http://localhost:8080/api';
+
+            try {
+                const response = await fetch(`${apiBase}/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, confirmPassword })
+                });
+
+                let data;
+                try {
+                    data = await response.json();
+                } catch (jsonErr) {
+                    showError('Server communication error. Please try again.');
+                    return;
+                }
+
+                if (response.ok && data.success) {
+                    showSuccess(data.message || 'Account created successfully.');
+                    document.getElementById('signupForm').reset();
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 1500);
+                } else {
+                    showError(data.message || 'Registration failed.');
+                }
+            } catch (err) {
+                showError('Cannot connect to the Java server. Please make sure the backend is running.');
+            }
+        });
+
+        function showError(msg) {
+            const el = document.getElementById('errorAlert');
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+
+        function showSuccess(msg) {
+            const el = document.getElementById('successAlert');
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+    </script>
+</body>
+
+</html>

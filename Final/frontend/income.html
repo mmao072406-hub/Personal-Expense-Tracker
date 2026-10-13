@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Income - Personal Expense Tracker</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <div class="sidebar">
+            <div class="sidebar-brand">
+                <span>⚡ Expense Tracker</span>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="dashboard.html">🏠 Dashboard</a></li>
+                <li><a href="expenses.html">💰 Expenses</a></li>
+                <li><a href="income.html" class="active">📈 Income</a></li>
+                <li><a href="budget.html">💵 Budget</a></li>
+                <li><a href="reports.html">📊 Reports</a></li>
+                <li><a href="profile.html">👤 Profile</a></li>
+            </ul>
+            <div class="sidebar-logout">
+                <button onclick="logout()">🚪 Logout</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Income Management</h1>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">Record and track all incoming funds and earnings.</p>
+                </div>
+            </div>
+
+            <!-- Alert Box -->
+            <div id="alertBox" class="alert"></div>
+
+            <!-- Add Income Form -->
+            <div class="card">
+                <div class="card-title">Add New Income</div>
+                <form id="addIncomeForm">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                        <div class="form-group">
+                            <label for="incAmount">Amount (₱) *</label>
+                            <input type="number" id="incAmount" class="form-control" placeholder="e.g. 5000" step="0.01" min="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="incSource">Source *</label>
+                            <select id="incSource" class="form-control" required>
+                                <option value="">-- Select Source --</option>
+                                <option value="Salary">Salary</option>
+                                <option value="Allowance">Allowance</option>
+                                <option value="Freelance">Freelance</option>
+                                <option value="Business">Business</option>
+                                <option value="Gift">Gift</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="incCategory">Category *</label>
+                            <input type="text" id="incCategory" class="form-control" placeholder="e.g. Monthly Pay" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="incDate">Date *</label>
+                            <input type="date" id="incDate" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="incNotes">Optional Notes</label>
+                        <input type="text" id="incNotes" class="form-control" placeholder="Additional details or remarks">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">➕ Save Income</button>
+                </form>
+            </div>
+
+            <!-- Income History Table -->
+            <div class="card">
+                <div class="card-title">Income History</div>
+
+                <div class="filter-bar">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Search source/notes..." oninput="loadIncome()">
+                    <select id="sourceFilter" class="form-control" onchange="loadIncome()">
+                        <option value="All">All Sources</option>
+                        <option value="Salary">Salary</option>
+                        <option value="Allowance">Allowance</option>
+                        <option value="Freelance">Freelance</option>
+                        <option value="Business">Business</option>
+                        <option value="Gift">Gift</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <input type="date" id="dateFromFilter" class="form-control" onchange="loadIncome()">
+                    <input type="date" id="dateToFilter" class="form-control" onchange="loadIncome()">
+                    <select id="sortBy" class="form-control" onchange="loadIncome()">
+                        <option value="date_desc">Newest First</option>
+                        <option value="date_asc">Oldest First</option>
+                        <option value="amount_desc">Highest Amount</option>
+                        <option value="amount_asc">Lowest Amount</option>
+                    </select>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Source</th>
+                                <th>Category</th>
+                                <th>Notes</th>
+                                <th>Amount</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="incomeTableBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--text-muted);">Loading income records...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Income Modal -->
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">Edit Income Record</div>
+                <button class="close-btn" onclick="closeEditModal()">&times;</button>
+            </div>
+            <form id="editIncomeForm">
+                <input type="hidden" id="editIncId">
+                <div class="form-group">
+                    <label for="editIncAmount">Amount (₱) *</label>
+                    <input type="number" id="editIncAmount" class="form-control" step="0.01" min="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="editIncSource">Source *</label>
+                    <select id="editIncSource" class="form-control" required>
+                        <option value="Salary">Salary</option>
+                        <option value="Allowance">Allowance</option>
+                        <option value="Freelance">Freelance</option>
+                        <option value="Business">Business</option>
+                        <option value="Gift">Gift</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editIncCategory">Category *</label>
+                    <input type="text" id="editIncCategory" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="editIncDate">Date *</label>
+                    <input type="date" id="editIncDate" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="editIncNotes">Notes</label>
+                    <input type="text" id="editIncNotes" class="form-control">
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-card" style="max-width: 400px;">
+            <div class="modal-header">
+                <div class="modal-title" style="color: var(--accent-danger);">Confirm Delete</div>
+                <button class="close-btn" onclick="closeDeleteModal()">&times;</button>
+            </div>
+            <p style="margin-bottom: 20px; color: var(--text-secondary);">Are you sure you want to delete this income record?</p>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('auth_token');
+        if (!token) window.location.href = 'login.html';
+
+        document.getElementById('incDate').value = new Date().toISOString().split('T')[0];
+
+        // Add Income Form
+        document.getElementById('addIncomeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            clearAlert();
+
+            const amount = document.getElementById('incAmount').value;
+            const source = document.getElementById('incSource').value;
+            const category = document.getElementById('incCategory').value.trim();
+            const date = document.getElementById('incDate').value;
+            const notes = document.getElementById('incNotes').value.trim();
+
+            if (!amount || parseFloat(amount) <= 0) {
+                showAlert('Invalid income amount. Please enter a valid positive number.', 'danger');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/income', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ amount, source, category, date, notes })
+                });
+
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    showAlert('Income record added successfully!', 'success');
+                    document.getElementById('addIncomeForm').reset();
+                    document.getElementById('incDate').value = new Date().toISOString().split('T')[0];
+                    loadIncome();
+                } else {
+                    showAlert(data.message || 'Failed to add income record.', 'danger');
+                }
+            } catch (err) {
+                showAlert('Network error occurred.', 'danger');
+            }
+        });
+
+        // Load Income Records
+        async function loadIncome() {
+            const search = document.getElementById('searchInput').value.trim();
+            const category = document.getElementById('sourceFilter').value;
+            const dateFrom = document.getElementById('dateFromFilter').value;
+            const dateTo = document.getElementById('dateToFilter').value;
+            const sortBy = document.getElementById('sortBy').value;
+
+            const queryParams = new URLSearchParams({ search, category, dateFrom, dateTo, sortBy });
+
+            try {
+                const response = await fetch('/api/income?' + queryParams.toString(), {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.status === 401) {
+                    logout();
+                    return;
+                }
+
+                const data = await response.json();
+                if (data.success) {
+                    renderIncomeTable(data.income);
+                }
+            } catch (err) {
+                console.error('Error fetching income:', err);
+            }
+        }
+
+        let allIncome = [];
+
+        function renderIncomeTable(incomeList) {
+            allIncome = incomeList;
+            const tbody = document.getElementById('incomeTableBody');
+            if (!incomeList || incomeList.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No income records found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = incomeList.map(inc => `
+                <tr>
+                    <td>${escapeHtml(inc.date)}</td>
+                    <td style="font-weight: 600;">${escapeHtml(inc.source)}</td>
+                    <td>${escapeHtml(inc.category)}</td>
+                    <td>${escapeHtml(inc.notes || '-')}</td>
+                    <td style="font-weight: 700; color: var(--accent-success);">₱${Number(inc.amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>
+                        <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem;" onclick="openEditModal(${inc.id})">✏️ Edit</button>
+                        <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="openDeleteModal(${inc.id})">🗑️ Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openEditModal(id) {
+            const inc = allIncome.find(i => i.id === id);
+            if (!inc) return;
+
+            document.getElementById('editIncId').value = inc.id;
+            document.getElementById('editIncAmount').value = inc.amount;
+            document.getElementById('editIncSource').value = inc.source;
+            document.getElementById('editIncCategory').value = inc.category;
+            document.getElementById('editIncDate').value = inc.date;
+            document.getElementById('editIncNotes').value = inc.notes || '';
+
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+        }
+
+        document.getElementById('editIncomeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const id = document.getElementById('editIncId').value;
+            const amount = document.getElementById('editIncAmount').value;
+            const source = document.getElementById('editIncSource').value;
+            const category = document.getElementById('editIncCategory').value;
+            const date = document.getElementById('editIncDate').value;
+            const notes = document.getElementById('editIncNotes').value;
+
+            try {
+                const response = await fetch('/api/income', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ id, amount, source, category, date, notes })
+                });
+
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    closeEditModal();
+                    showAlert('Income updated successfully.', 'success');
+                    loadIncome();
+                } else {
+                    alert(data.message || 'Failed to update income.');
+                }
+            } catch (err) {
+                alert('Network error.');
+            }
+        });
+
+        let deleteTargetId = null;
+        function openDeleteModal(id) {
+            deleteTargetId = id;
+            document.getElementById('deleteModal').classList.add('active');
+        }
+
+        function closeDeleteModal() {
+            deleteTargetId = null;
+            document.getElementById('deleteModal').classList.remove('active');
+        }
+
+        document.getElementById('confirmDeleteBtn').addEventListener('click', async function() {
+            if (!deleteTargetId) return;
+
+            try {
+                const response = await fetch(`/api/income?id=${deleteTargetId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    closeDeleteModal();
+                    showAlert('Income record deleted successfully.', 'success');
+                    loadIncome();
+                } else {
+                    alert(data.message || 'Failed to delete income.');
+                }
+            } catch (err) {
+                alert('Network error.');
+            }
+        });
+
+        function showAlert(msg, type) {
+            const box = document.getElementById('alertBox');
+            box.className = `alert alert-${type}`;
+            box.textContent = msg;
+            box.style.display = 'block';
+            setTimeout(() => { box.style.display = 'none'; }, 4000);
+        }
+
+        function clearAlert() {
+            document.getElementById('alertBox').style.display = 'none';
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function logout() {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('username');
+            window.location.href = 'login.html';
+        }
+
+        loadIncome();
+    </script>
+</body>
+</html>

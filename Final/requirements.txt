@@ -1,0 +1,5 @@
+# Personal Expense Tracker Requirements
+# Runtime Dependencies:
+# Java JDK 21+
+# Python 3.8+ (standard library modules: sqlite3, json, datetime, argparse)
+# SQLite JDBC Driver (bundled in lib/sqlite-jdbc.jar)

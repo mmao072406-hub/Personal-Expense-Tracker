@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Personal Expense Tracker</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <div class="sidebar">
+            <div class="sidebar-brand">
+                <span>⚡ Expense Tracker</span>
+            </div>
+            <ul class="sidebar-nav">
+                <li><a href="dashboard.html">🏠 Dashboard</a></li>
+                <li><a href="expenses.html">💰 Expenses</a></li>
+                <li><a href="income.html">📈 Income</a></li>
+                <li><a href="budget.html">💵 Budget</a></li>
+                <li><a href="reports.html">📊 Reports</a></li>
+                <li><a href="profile.html" class="active">👤 Profile</a></li>
+            </ul>
+            <div class="sidebar-logout">
+                <button onclick="logout()">🚪 Logout</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">User Profile & Settings</h1>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">Manage your account credentials and security settings.</p>
+                </div>
+            </div>
+
+            <!-- Alert Box -->
+            <div id="alertBox" class="alert"></div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+                <!-- Profile Information Card -->
+                <div class="card">
+                    <div class="card-title">Account Details</div>
+                    <div style="display: flex; flex-direction: column; gap: 16px;">
+                        <div>
+                            <div style="font-size: 0.82rem; color: var(--text-secondary); text-transform: uppercase;">Username</div>
+                            <div id="profUsername" style="font-size: 1.2rem; font-weight: 700; color: var(--accent-primary);">Loading...</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.82rem; color: var(--text-secondary); text-transform: uppercase;">Member Since</div>
+                            <div id="profCreatedAt" style="font-size: 1rem; font-weight: 600;">Loading...</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.82rem; color: var(--text-secondary); text-transform: uppercase;">Total Transactions Recorded</div>
+                            <div id="profTransactions" style="font-size: 1rem; font-weight: 600;">0</div>
+                        </div>
+                        <div style="padding-top: 10px; border-top: 1px solid var(--border-color);">
+                            <button class="btn btn-secondary btn-block" onclick="logout()">🚪 Log Out of Session</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Change Password Card -->
+                <div class="card">
+                    <div class="card-title">Change Password</div>
+                    <form id="changePasswordForm">
+                        <div class="form-group">
+                            <label for="currentPassword">Current Password *</label>
+                            <input type="password" id="currentPassword" class="form-control" placeholder="Enter current password" required autocomplete="current-password">
+                        </div>
+                        <div class="form-group">
+                            <label for="newPassword">New Password *</label>
+                            <input type="password" id="newPassword" class="form-control" placeholder="Enter new password" required autocomplete="new-password">
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmNewPassword">Confirm New Password *</label>
+                            <input type="password" id="confirmNewPassword" class="form-control" placeholder="Confirm new password" required autocomplete="new-password">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Update Password</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Danger Zone: Delete Account -->
+            <div class="card" style="border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05); margin-top: 24px;">
+                <div class="card-title" style="color: var(--accent-danger);">⚠️ Danger Zone: Delete Account</div>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 16px;">
+                    Permanently delete your user account and erase all associated financial records (expenses, income, and budgets). This action is permanent and cannot be undone.
+                </p>
+                <button class="btn btn-danger" onclick="openDeleteAccountModal()">🗑️ Delete Account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Account Confirmation Modal -->
+    <div id="deleteAccountModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title" style="color: var(--accent-danger);">Permanently Delete Account?</div>
+                <button class="close-btn" onclick="closeDeleteAccountModal()">&times;</button>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 16px; font-size: 0.92rem;">
+                Are you sure you want to permanently delete your account and all financial records? Please enter your current password to confirm deletion.
+            </p>
+            <div class="form-group">
+                <label for="deleteConfirmPassword">Password *</label>
+                <input type="password" id="deleteConfirmPassword" class="form-control" placeholder="Enter password to confirm" required>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeDeleteAccountModal()">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteAccountBtn">Permanently Delete Account</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('auth_token');
+        if (!token) window.location.href = 'login.html';
+
+        async function loadProfile() {
+            try {
+                const response = await fetch('/api/profile', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.status === 401) {
+                    logout();
+                    return;
+                }
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('profUsername').textContent = data.username;
+                    document.getElementById('profCreatedAt').textContent = data.createdAt || 'N/A';
+                    document.getElementById('profTransactions').textContent = data.totalTransactions || 0;
+                }
+            } catch (err) {
+                console.error('Error fetching profile:', err);
+            }
+        }
+
+        // Change Password Form
+        document.getElementById('changePasswordForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            clearAlert();
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+
+            if (!currentPassword || !newPassword) {
+                showAlert('All password fields are required.', 'danger');
+                return;
+            }
+
+            if (newPassword !== confirmNewPassword) {
+                showAlert('New passwords must match.', 'danger');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/profile/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ currentPassword, newPassword, confirmNewPassword })
+                });
+
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    showAlert('Password changed successfully!', 'success');
+                    document.getElementById('changePasswordForm').reset();
+                } else {
+                    showAlert(data.message || 'Failed to change password.', 'danger');
+                }
+            } catch (err) {
+                showAlert('Network error occurred.', 'danger');
+            }
+        });
+
+        // Delete Account Handlers
+        function openDeleteAccountModal() {
+            document.getElementById('deleteConfirmPassword').value = '';
+            document.getElementById('deleteAccountModal').classList.add('active');
+        }
+
+        function closeDeleteAccountModal() {
+            document.getElementById('deleteAccountModal').classList.remove('active');
+        }
+
+        document.getElementById('confirmDeleteAccountBtn').addEventListener('click', async function() {
+            const password = document.getElementById('deleteConfirmPassword').value;
+            if (!password) {
+                alert('Please enter your password to confirm deletion.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/profile/delete-account', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ password })
+                });
+
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('username');
+                    alert('Account deleted successfully.');
+                    window.location.href = 'login.html';
+                } else {
+                    alert(data.message || 'Incorrect password. Account deletion cancelled.');
+                }
+            } catch (err) {
+                alert('Network error.');
+            }
+        });
+
+        function showAlert(msg, type) {
+            const box = document.getElementById('alertBox');
+            box.className = `alert alert-${type}`;
+            box.textContent = msg;
+            box.style.display = 'block';
+            setTimeout(() => { box.style.display = 'none'; }, 4000);
+        }
+
+        function clearAlert() {
+            document.getElementById('alertBox').style.display = 'none';
+        }
+
+        function logout() {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('username');
+            window.location.href = 'login.html';
+        }
+
+        loadProfile();
+    </script>
+</body>
+</html>
